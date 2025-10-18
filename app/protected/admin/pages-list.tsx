@@ -23,8 +23,8 @@ interface PagesListProps {
 // Helper function to format date consistently
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
   const year = date.getFullYear();
   return `${month}/${day}/${year}`;
 }
@@ -38,11 +38,15 @@ export function PagesList({ pages }: PagesListProps) {
     (page) =>
       page.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
       page.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      page.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      page.company_name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleDelete = async (pageId: string, pageTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${pageTitle}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${pageTitle}"? This action cannot be undone.`,
+      )
+    ) {
       return;
     }
 
@@ -77,7 +81,9 @@ export function PagesList({ pages }: PagesListProps) {
       {filteredPages.length === 0 ? (
         <div className="text-center py-12 bg-secondary/10 rounded-lg">
           <p className="text-muted-foreground">
-            {searchTerm ? "No pages found matching your search" : "No pages created yet"}
+            {searchTerm
+              ? "No pages found matching your search"
+              : "No pages created yet"}
           </p>
           {!searchTerm && (
             <Link
@@ -100,9 +106,7 @@ export function PagesList({ pages }: PagesListProps) {
                   <h3 className="font-semibold text-lg">
                     {page.title || page.company_name || "Untitled Page"}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    /{page.slug}
-                  </p>
+                  <p className="text-sm text-muted-foreground">/{page.slug}</p>
                   <div className="flex gap-2 mt-2">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
@@ -136,6 +140,12 @@ export function PagesList({ pages }: PagesListProps) {
                   >
                     Leads
                   </Link>
+                  <Link
+                    href={`/protected/admin/pages/${page.id}/calls`}
+                    className="px-3 py-1 text-sm border rounded hover:bg-secondary"
+                  >
+                    Calls
+                  </Link>
                   {page.is_published && (
                     <a
                       href={`/${page.slug}`}
@@ -147,7 +157,12 @@ export function PagesList({ pages }: PagesListProps) {
                     </a>
                   )}
                   <button
-                    onClick={() => handleDelete(page.id, page.title || page.company_name || "this page")}
+                    onClick={() =>
+                      handleDelete(
+                        page.id,
+                        page.title || page.company_name || "this page",
+                      )
+                    }
                     disabled={deletingPageId === page.id}
                     className="px-3 py-1 text-sm border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                   >

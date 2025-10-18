@@ -29,4 +29,4 @@ User-agent: Wayback Machine
 Disallow: /
 
 # No sitemap
-Sitemap:
+Sitemap:g

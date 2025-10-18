@@ -7,17 +7,20 @@ import outputGif from "@/app/output.gif";
 
 interface VoiceAgentProps {
   pageData: {
+    id?: string;
     company_name?: string;
     meeting_transcript?: string;
     hero_title?: string;
     hero_subtitle?: string;
   };
   agentId?: string; // Allow override of agent ID
+  userEmail?: string | null; // User's email address
 }
 
 export function VoiceAgent({
   pageData,
   agentId = "agent_6301k7rp217yfx1sn748jxts0pdn",
+  userEmail,
 }: VoiceAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -42,8 +45,14 @@ export function VoiceAgent({
       const sessionConfig: any = {
         agentId: agentId,
         connectionType: "webrtc",
+        metadata: {
+          pageId: pageData.id,
+          companyName: pageData.company_name || "",
+          userEmail: userEmail || "",
+        },
         dynamicVariables: {
           companyName: pageData.company_name || "",
+          userEmail: userEmail || "",
         },
         clientTools: {
           getMeetingTranscript: async (): Promise<string> => {

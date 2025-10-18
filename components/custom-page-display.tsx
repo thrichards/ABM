@@ -32,6 +32,7 @@ interface CustomPageDisplayProps {
 
 export function CustomPageDisplay({ page }: CustomPageDisplayProps) {
   const [hasAccess, setHasAccess] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user has already provided email for this page
@@ -41,12 +42,14 @@ export function CustomPageDisplay({ page }: CustomPageDisplayProps) {
       const storedEmail = sessionStorage.getItem(`page_access_${page.id}`);
       if (storedEmail) {
         setHasAccess(true);
+        setUserEmail(storedEmail);
       }
     }
   }, [page.id, page.email_gate_enabled]);
 
-  const handleEmailSuccess = () => {
+  const handleEmailSuccess = (email: string) => {
     setHasAccess(true);
+    setUserEmail(email);
   };
 
   // Show email gate if enabled and user hasn't provided email yet
@@ -149,9 +152,9 @@ export function CustomPageDisplay({ page }: CustomPageDisplayProps) {
                       Your Journey with Us
                     </h2>
                     <p className="text-lg text-muted-foreground">
-                      We&apos;re excited to partner with {page.company_name} and help
-                      you achieve your goals. This is just the beginning of what
-                      we can accomplish together.
+                      We&apos;re excited to partner with {page.company_name} and
+                      help you achieve your goals. This is just the beginning of
+                      what we can accomplish together.
                     </p>
                   </div>
 
@@ -191,7 +194,7 @@ export function CustomPageDisplay({ page }: CustomPageDisplayProps) {
               <div className="lg:sticky lg:top-8 space-y-6">
                 {/* AI Agent Card */}
                 <div className="bg-card/50 backdrop-blur-sm rounded-lg border p-6">
-                  <VoiceAgent pageData={page} />
+                  <VoiceAgent pageData={page} userEmail={userEmail} />
                 </div>
 
                 {/* Meeting Booking Card */}
@@ -243,7 +246,8 @@ export function CustomPageDisplay({ page }: CustomPageDisplayProps) {
                   className="h-10 w-auto"
                 />
                 <p className="text-base text-white">
-                  © {new Date().getFullYear()} - Personalized experience for {page.company_name}
+                  © {new Date().getFullYear()} - Personalized experience for{" "}
+                  {page.company_name}
                 </p>
               </div>
             </div>

@@ -7,7 +7,7 @@ interface EmailGateProps {
   emailGateType: string;
   emailGateDomain?: string;
   emailGateAllowlist?: string[];
-  onSuccess: () => void;
+  onSuccess: (email: string) => void;
 }
 
 export function EmailGate({
@@ -39,7 +39,11 @@ export function EmailGate({
 
     // Check allowlist (without revealing it's an allowlist)
     if (emailGateType === "allowlist" && emailGateAllowlist) {
-      if (!emailGateAllowlist.some(allowed => allowed.toLowerCase() === email.toLowerCase())) {
+      if (
+        !emailGateAllowlist.some(
+          (allowed) => allowed.toLowerCase() === email.toLowerCase(),
+        )
+      ) {
         setError("Access restricted");
         return false;
       }
@@ -77,7 +81,7 @@ export function EmailGate({
 
       // Store email in session/cookie
       sessionStorage.setItem(`page_access_${pageId}`, email);
-      onSuccess();
+      onSuccess(email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
@@ -89,9 +93,7 @@ export function EmailGate({
       <div className="w-full max-w-md mx-auto p-8">
         <div className="bg-card rounded-lg shadow-xl border border-gray-200 p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">
-              Welcome
-            </h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome</h1>
             <p className="text-muted-foreground">
               Please enter your email to continue
             </p>
