@@ -1,7 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function Home() {
-  return (
-    <main className="min-h-screen">
-      {/* Blank root page - ABM landing pages will be served from dynamic routes */}
-    </main>
-  );
+  redirect("https://trig.ai");
 }
