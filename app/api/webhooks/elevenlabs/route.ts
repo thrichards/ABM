@@ -144,7 +144,6 @@ export async function POST(request: NextRequest) {
     const callDurationSecs = metadata.call_duration_secs || null;
     const cost = metadata.cost ? metadata.cost / 100 : null; // Convert from cents to dollars
     const startTimeUnix = metadata.start_time_unix_secs || null;
-    const acceptedTimeUnix = metadata.accepted_time_unix_secs || null;
 
     // Calculate ended_at from start + duration
     const startedAt = startTimeUnix ? new Date(startTimeUnix * 1000) : null;
