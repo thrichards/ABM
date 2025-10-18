@@ -78,119 +78,175 @@ export default async function CallLogsPage({
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {callLogs.map((log) => (
-            <div
-              key={log.id}
-              className="border rounded-lg p-6 bg-card hover:shadow-md transition-shadow"
-            >
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Call Details</h3>
-                  <dl className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Duration:</dt>
-                      <dd className="font-medium">
-                        {formatDuration(log.call_duration_seconds)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Cost:</dt>
-                      <dd className="font-medium">
-                        {formatCost(log.call_cost_usd)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Started:</dt>
-                      <dd className="font-medium">
-                        {formatDate(log.started_at)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Ended:</dt>
-                      <dd className="font-medium">
-                        {formatDate(log.ended_at)}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
+        <div className="space-y-6">
+          {callLogs.map((log) => {
+            const analysis = log.analysis as {
+              call_successful?: string;
+              call_summary_title?: string;
+              transcript_summary?: string;
+              evaluation_criteria_results?: Record<string, unknown>;
+              data_collection_results?: Record<string, unknown>;
+            } | null;
 
-                <div>
-                  <h3 className="font-semibold mb-2">Contact Info</h3>
-                  <dl className="space-y-1 text-sm">
-                    {log.user_email && (
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Email:</dt>
-                        <dd className="font-medium">{log.user_email}</dd>
+            return (
+              <div
+                key={log.id}
+                className="border rounded-lg bg-card overflow-hidden"
+              >
+                {/* Analysis - Most Prominent */}
+                {analysis && (
+                  <div className="bg-primary/5 border-b p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold mb-2">
+                          {analysis.call_summary_title || "Call Summary"}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-3 py-1 text-sm font-medium rounded-full ${
+                              analysis.call_successful === "success"
+                                ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                                : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400"
+                            }`}
+                          >
+                            {analysis.call_successful === "success"
+                              ? "✓ Successful"
+                              : "⚠ Needs Follow-up"}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(log.created_at)}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    {log.company_name && (
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Company:</dt>
-                        <dd className="font-medium">{log.company_name}</dd>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <dt className="text-muted-foreground">
-                        Conversation ID:
-                      </dt>
-                      <dd className="font-mono text-xs">
-                        {log.conversation_id}
-                      </dd>
                     </div>
-                  </dl>
+                    {analysis.transcript_summary && (
+                      <p className="text-base leading-relaxed">
+                        {analysis.transcript_summary}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="p-6">
+                  {/* Contact Info & Call Details */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+                        Contact Information
+                      </h4>
+                      <dl className="space-y-2">
+                        {log.user_email && (
+                          <div>
+                            <dt className="text-xs text-muted-foreground">
+                              Email
+                            </dt>
+                            <dd className="font-medium">{log.user_email}</dd>
+                          </div>
+                        )}
+                        {log.company_name && (
+                          <div>
+                            <dt className="text-xs text-muted-foreground">
+                              Company
+                            </dt>
+                            <dd className="font-medium">{log.company_name}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+                        Call Metrics
+                      </h4>
+                      <dl className="space-y-2">
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Duration
+                          </dt>
+                          <dd className="font-medium">
+                            {formatDuration(log.call_duration_seconds)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Cost
+                          </dt>
+                          <dd className="font-medium">
+                            {formatCost(log.call_cost_usd)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Time
+                          </dt>
+                          <dd className="font-medium">
+                            {formatDate(log.started_at)}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+
+                  {/* Transcript - Collapsible */}
+                  {log.transcript &&
+                    Array.isArray(log.transcript) &&
+                    log.transcript.length > 0 && (
+                      <details className="group">
+                        <summary className="cursor-pointer font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground flex items-center gap-2 hover:text-foreground transition-colors">
+                          <span className="group-open:rotate-90 transition-transform">
+                            ▶
+                          </span>
+                          Full Transcript
+                        </summary>
+                        <div className="bg-secondary/20 rounded-lg p-4 mt-2 space-y-3">
+                          {log.transcript.map(
+                            (
+                              message: {
+                                role?: string;
+                                message?: string;
+                                content?: string;
+                                original_message?: string;
+                              },
+                              idx: number,
+                            ) => (
+                              <div key={idx} className="flex gap-3">
+                                <div
+                                  className={`flex-shrink-0 w-16 text-xs font-semibold ${
+                                    message.role === "user"
+                                      ? "text-blue-600 dark:text-blue-400"
+                                      : "text-purple-600 dark:text-purple-400"
+                                  }`}
+                                >
+                                  {message.role === "user" ? "User" : "Agent"}
+                                </div>
+                                <div className="flex-1 text-sm">
+                                  {message.original_message ||
+                                    message.message ||
+                                    message.content}
+                                </div>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </details>
+                    )}
+
+                  {/* Technical Details - Collapsed by default */}
+                  <details className="group mt-4">
+                    <summary className="cursor-pointer text-xs text-muted-foreground flex items-center gap-2 hover:text-foreground transition-colors">
+                      <span className="group-open:rotate-90 transition-transform">
+                        ▶
+                      </span>
+                      Technical Details
+                    </summary>
+                    <div className="mt-2 text-xs font-mono text-muted-foreground">
+                      Conversation ID: {log.conversation_id}
+                    </div>
+                  </details>
                 </div>
               </div>
-
-              {/* Transcript */}
-              {log.transcript && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2">Transcript</h3>
-                  <div className="bg-secondary/20 rounded p-4 max-h-60 overflow-y-auto">
-                    {Array.isArray(log.transcript) ? (
-                      <div className="space-y-2">
-                        {log.transcript.map(
-                          (
-                            message: {
-                              role?: string;
-                              message?: string;
-                              content?: string;
-                            },
-                            idx: number,
-                          ) => (
-                            <div key={idx} className="text-sm">
-                              <span className="font-semibold">
-                                {message.role === "user" ? "User" : "Agent"}:
-                              </span>{" "}
-                              <span className="text-muted-foreground">
-                                {message.message || message.content}
-                              </span>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    ) : (
-                      <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                        {JSON.stringify(log.transcript, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Analysis */}
-              {log.analysis && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2">Analysis</h3>
-                  <div className="bg-secondary/20 rounded p-4">
-                    <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                      {JSON.stringify(log.analysis, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

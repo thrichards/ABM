@@ -139,15 +139,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Extract metadata fields
+    const metadata = data.metadata || {};
+    const callDurationSecs = metadata.call_duration_secs || null;
+    const cost = metadata.cost ? metadata.cost / 100 : null; // Convert from cents to dollars
+    const startTimeUnix = metadata.start_time_unix_secs || null;
+    const acceptedTimeUnix = metadata.accepted_time_unix_secs || null;
+
+    // Calculate ended_at from start + duration
+    const startedAt = startTimeUnix ? new Date(startTimeUnix * 1000) : null;
+    const endedAt =
+      startTimeUnix && callDurationSecs
+        ? new Date((startTimeUnix + callDurationSecs) * 1000)
+        : null;
+
     // Insert call log
     const { error: insertError } = await supabase.from("call_logs").insert({
       page_id: pageId,
       conversation_id: data.conversation_id,
       agent_id: data.agent_id,
-      call_duration_seconds: data.call_duration_seconds,
-      call_cost_usd: data.call_cost_usd,
-      started_at: data.started_at ? new Date(data.started_at) : null,
-      ended_at: data.ended_at ? new Date(data.ended_at) : null,
+      call_duration_seconds: callDurationSecs,
+      call_cost_usd: cost,
+      started_at: startedAt,
+      ended_at: endedAt,
       transcript: data.transcript || null,
       analysis: data.analysis || null,
       user_email: userEmail,
