@@ -5,14 +5,14 @@ import crypto from "crypto";
 // Initialize Supabase client with service role for bypassing RLS
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 // Verify HMAC signature from ElevenLabs
 function verifyWebhookSignature(
   payload: string,
   signature: string,
-  secret: string
+  secret: string,
 ): boolean {
   if (!signature || !secret) {
     return false;
@@ -47,7 +47,7 @@ function verifyWebhookSignature(
 
     return crypto.timingSafeEqual(
       Buffer.from(computedHash),
-      Buffer.from(receivedHash)
+      Buffer.from(receivedHash),
     );
   } catch (error) {
     console.error("Error verifying webhook signature:", error);
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         console.error("Invalid webhook signature");
         return NextResponse.json(
           { error: "Invalid signature" },
-          { status: 401 }
+          { status: 401 },
         );
       }
     }
@@ -81,6 +81,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = body.data;
+
+    // Log the full payload for debugging
+    console.log("Webhook payload:", JSON.stringify(body, null, 2));
 
     // Extract user email from conversation metadata or dynamic variables
     const userEmail =
@@ -96,24 +99,47 @@ export async function POST(request: NextRequest) {
       null;
 
     // Find the page associated with this conversation
-    // We'll match by company_name or you could pass page_id in metadata
-    let pageId = data.metadata?.pageId || data.variables?.pageId;
+    // Check multiple possible locations for pageId
+    let pageId =
+      data.metadata?.pageId ||
+      data.dynamic_variables?.pageId ||
+      data.variables?.pageId ||
+      data.custom_data?.pageId ||
+      null;
+
+    console.log("Extracted pageId:", pageId);
+    console.log("Extracted companyName:", companyName);
 
     if (!pageId && companyName) {
       // Try to find page by company name
-      const { data: pages } = await supabase
+      console.log("Attempting to find page by company_name:", companyName);
+      const { data: pages, error: pageError } = await supabase
         .from("pages")
         .select("id")
-        .eq("company_name", companyName)
+        .ilike("company_name", companyName)
         .limit(1);
+
+      if (pageError) {
+        console.error("Error querying pages:", pageError);
+      }
 
       if (pages && pages.length > 0) {
         pageId = pages[0].id;
+        console.log("Found page by company_name:", pageId);
+      } else {
+        console.log("No page found with company_name:", companyName);
       }
     }
 
     if (!pageId) {
       console.error("Could not determine page_id for call log");
+      console.error("Available data:", {
+        metadata: data.metadata,
+        dynamic_variables: data.dynamic_variables,
+        variables: data.variables,
+        custom_data: data.custom_data,
+        companyName,
+      });
       // Still return 200 to avoid webhook being disabled
       return NextResponse.json({
         message: "Page not found, but acknowledged",
@@ -140,7 +166,7 @@ export async function POST(request: NextRequest) {
       console.error("Error inserting call log:", insertError);
       return NextResponse.json(
         { error: "Failed to store call log" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -149,7 +175,7 @@ export async function POST(request: NextRequest) {
     console.error("Error processing webhook:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
