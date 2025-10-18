@@ -85,30 +85,23 @@ export async function POST(request: NextRequest) {
     // Log the full payload for debugging
     console.log("Webhook payload:", JSON.stringify(body, null, 2));
 
-    // Extract user email from conversation metadata or dynamic variables
-    const userEmail =
-      data.metadata?.userEmail ||
-      data.dynamic_variables?.userEmail ||
-      data.variables?.userEmail ||
-      null;
+    // Extract dynamic variables from the correct location
+    const dynamicVars =
+      data.conversation_initiation_client_data?.dynamic_variables || {};
 
-    const companyName =
-      data.metadata?.companyName ||
-      data.dynamic_variables?.companyName ||
-      data.variables?.companyName ||
-      null;
+    // Extract user email from dynamic variables
+    const userEmail = dynamicVars.userEmail || null;
+
+    // Extract company name from dynamic variables
+    const companyName = dynamicVars.companyName || null;
 
     // Find the page associated with this conversation
-    // Check multiple possible locations for pageId
-    let pageId =
-      data.metadata?.pageId ||
-      data.dynamic_variables?.pageId ||
-      data.variables?.pageId ||
-      data.custom_data?.pageId ||
-      null;
+    // Check for pageId in dynamic variables
+    let pageId = dynamicVars.pageId || null;
 
     console.log("Extracted pageId:", pageId);
     console.log("Extracted companyName:", companyName);
+    console.log("Extracted userEmail:", userEmail);
 
     if (!pageId && companyName) {
       // Try to find page by company name

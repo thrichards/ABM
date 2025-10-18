@@ -51,6 +51,7 @@ export function VoiceAgent({
           userEmail: userEmail || "",
         },
         dynamicVariables: {
+          pageId: pageData.id,
           companyName: pageData.company_name || "",
           userEmail: userEmail || "",
         },
