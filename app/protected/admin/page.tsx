@@ -5,7 +5,9 @@ import { PagesList } from "./pages-list";
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Get user's organization
   const { data: orgUser } = await supabase
@@ -27,7 +29,7 @@ export default async function AdminDashboard() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold">Custom Pages</h2>
+          <h2 className="text-3xl font-bold">ABM Pages</h2>
           <p className="text-muted-foreground mt-2">
             Create and manage ABM landing pages for your prospects
           </p>
