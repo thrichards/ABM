@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPage, updatePage } from "./actions";
+import { TranscriptSummaryPanel } from "@/components/transcript-summary-panel";
+import { PageContentPanel } from "@/components/page-content-panel";
 
 interface PageFormProps {
   organizationId?: string;
@@ -31,6 +33,13 @@ export function PageForm({ organizationId, userId, page }: PageFormProps) {
   const [emailGateEnabled, setEmailGateEnabled] = useState(page?.email_gate_enabled || false);
   const [emailGateType, setEmailGateType] = useState(page?.email_gate_type || "any");
   const [emailAllowlist, setEmailAllowlist] = useState(page?.email_gate_allowlist?.join("\n") || "");
+  const [meetingTranscript, setMeetingTranscript] = useState(
+    page?.meeting_transcript || "",
+  );
+  const [bodyMarkdown, setBodyMarkdown] = useState(
+    page?.body_markdown || "",
+  );
+  const [companyName, setCompanyName] = useState(page?.company_name || "");
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -84,7 +93,8 @@ export function PageForm({ organizationId, userId, page }: PageFormProps) {
             name="company_name"
             type="text"
             required
-            defaultValue={page?.company_name}
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="Acme Corp"
           />
@@ -134,14 +144,25 @@ export function PageForm({ organizationId, userId, page }: PageFormProps) {
       </div>
 
       <div>
-        <label htmlFor="body_markdown" className="block text-sm font-medium mb-2">
-          Page Content (Markdown)
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="body_markdown" className="block text-sm font-medium">
+            Page Content (Markdown)
+          </label>
+          {organizationId && (
+            <PageContentPanel
+              organizationId={organizationId}
+              companyName={companyName}
+              currentContext={meetingTranscript}
+              onContentGenerated={(content) => setBodyMarkdown(content)}
+            />
+          )}
+        </div>
         <textarea
           id="body_markdown"
           name="body_markdown"
           rows={10}
-          defaultValue={page?.body_markdown}
+          value={bodyMarkdown}
+          onChange={(e) => setBodyMarkdown(e.target.value)}
           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
           placeholder="## Your Journey with Us&#10;&#10;Write your page content here using Markdown formatting...&#10;&#10;- **Bold text** for emphasis&#10;- *Italic text* for subtle emphasis&#10;- [Links](https://example.com)&#10;- Lists and more!"
         />
@@ -151,20 +172,43 @@ export function PageForm({ organizationId, userId, page }: PageFormProps) {
       </div>
 
       <div>
-        <label htmlFor="meeting_transcript" className="block text-sm font-medium mb-2">
-          Meeting Transcript (For AI Agent)
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="meeting_transcript" className="block text-sm font-medium">
+            Meeting Transcript (For AI Agent)
+          </label>
+          {organizationId && (
+            <TranscriptSummaryPanel
+              organizationId={organizationId}
+              currentTranscript={meetingTranscript}
+              onSummaryGenerated={(summary) => setMeetingTranscript(summary)}
+            />
+          )}
+        </div>
         <textarea
           id="meeting_transcript"
           name="meeting_transcript"
           rows={6}
-          defaultValue={page?.meeting_transcript}
+          value={meetingTranscript}
+          onChange={(e) => setMeetingTranscript(e.target.value)}
           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-xs"
           placeholder="Paste meeting transcript here. This will be used by the AI voice agent to provide personalized responses..."
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          This transcript will be available to the ElevenLabs voice agent for context
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            This transcript will be available to the ElevenLabs voice agent for
+            context
+          </p>
+          <span
+            className={`text-xs font-mono ${
+              meetingTranscript.length > 65000
+                ? "text-destructive font-bold"
+                : "text-muted-foreground"
+            }`}
+          >
+            {meetingTranscript.length.toLocaleString()} bytes
+            {meetingTranscript.length > 65000 && " ⚠️"}
+          </span>
+        </div>
       </div>
 
       {/* Email Gate Settings */}

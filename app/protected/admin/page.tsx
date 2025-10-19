@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PagesList } from "./pages-list";
+import { Button } from "@/components/ui/button";
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
@@ -34,11 +35,8 @@ export default async function AdminDashboard() {
             Create and manage ABM landing pages for your prospects
           </p>
         </div>
-        <Link
-          href="/protected/admin/pages/new"
-          className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md"
-        >
-          Create New Page
+        <Link href="/protected/admin/pages/new">
+          <Button>Create New Page</Button>
         </Link>
       </div>
 

@@ -63,6 +63,12 @@ export default async function AdminLayout({
                   Pages
                 </Link>
                 <Link
+                  href="/protected/admin/prompts"
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                >
+                  AI Prompts
+                </Link>
+                <Link
                   href="/protected/admin/api-keys"
                   className="text-sm font-medium hover:text-primary transition-colors"
                 >
