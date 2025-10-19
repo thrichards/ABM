@@ -44,9 +44,9 @@ export default async function CallLogsPage({
     return `${mins}m ${secs}s`;
   };
 
-  const formatCost = (cost: number | null) => {
-    if (!cost) return "N/A";
-    return `$${cost.toFixed(4)}`;
+  const formatCredits = (credits: number | null) => {
+    if (credits === null || credits === undefined) return "N/A";
+    return credits.toLocaleString();
   };
 
   const formatDate = (date: string | null) => {
@@ -169,10 +169,26 @@ export default async function CallLogsPage({
                         </div>
                         <div>
                           <dt className="text-xs text-muted-foreground">
-                            Cost
+                            ElevenLabs Call Credits
                           </dt>
                           <dd className="font-medium">
-                            {formatCost(log.call_cost_usd)}
+                            {formatCredits(log.elevenlabs_call_credits)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            ElevenLabs LLM Credits
+                          </dt>
+                          <dd className="font-medium">
+                            {formatCredits(log.elevenlabs_llm_credits)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Total Credits
+                          </dt>
+                          <dd className="font-medium font-mono">
+                            {formatCredits(log.elevenlabs_total_credits)}
                           </dd>
                         </div>
                         <div>

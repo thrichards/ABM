@@ -142,7 +142,16 @@ export async function POST(request: NextRequest) {
     // Extract metadata fields
     const metadata = data.metadata || {};
     const callDurationSecs = metadata.call_duration_secs || null;
-    const cost = metadata.cost ? metadata.cost / 100 : null; // Convert from cents to dollars
+
+    // Extract ElevenLabs charging breakdown
+    // metadata.charging.call_charge = ElevenLabs call credits (e.g., 1039)
+    // metadata.charging.llm_charge = LLM credits (e.g., 48)
+    // metadata.cost = total credits (call_charge + llm_charge, e.g., 1087)
+    const charging = metadata.charging || {};
+    const elevenLabsCallCredits = charging.call_charge || null;
+    const elevenLabsLlmCredits = charging.llm_charge || null;
+    const elevenLabsTotalCredits = metadata.cost || null;
+
     const startTimeUnix = metadata.start_time_unix_secs || null;
 
     // Calculate ended_at from start + duration
@@ -158,7 +167,10 @@ export async function POST(request: NextRequest) {
       conversation_id: data.conversation_id,
       agent_id: data.agent_id,
       call_duration_seconds: callDurationSecs,
-      call_cost_usd: cost,
+      call_cost_credits_legacy: elevenLabsTotalCredits, // Legacy field (renamed from call_cost_usd)
+      elevenlabs_call_credits: elevenLabsCallCredits,
+      elevenlabs_llm_credits: elevenLabsLlmCredits,
+      elevenlabs_total_credits: elevenLabsTotalCredits,
       started_at: startedAt,
       ended_at: endedAt,
       transcript: data.transcript || null,
