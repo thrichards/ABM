@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ApiKeysList } from "./api-keys-list";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - API Keys",
+  description: "Manage your API keys",
+};
 
 export default async function ApiKeysPage() {
   const supabase = await createClient();

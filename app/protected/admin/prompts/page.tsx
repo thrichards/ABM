@@ -4,6 +4,12 @@ import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PromptsList } from "./prompts-list";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Prompts",
+  description: "Manage your AI prompts",
+};
 
 export default async function PromptsPage() {
   const supabase = await createClient();

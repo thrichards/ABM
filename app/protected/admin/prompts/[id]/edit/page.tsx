@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PromptForm } from "../../prompt-form";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Edit Prompt",
+  description: "Edit your AI prompt",
+};
 
 export default async function EditPromptPage({
   params,

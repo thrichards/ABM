@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Call Logs",
+  description: "View call logs and analytics for your ABM page",
+};
 
 export default async function CallLogsPage({
   params,

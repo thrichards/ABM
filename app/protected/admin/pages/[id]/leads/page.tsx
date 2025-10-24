@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ExportButton } from "./export-button";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Email Captures",
+  description: "View captured emails from your ABM page",
+};
 
 // Helper function to format date consistently
 function formatDate(dateString: string) {

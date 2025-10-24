@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PromptForm } from "../prompt-form";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Create Prompt",
+  description: "Create a new AI prompt",
+};
 
 export default async function NewPromptPage() {
   const supabase = await createClient();

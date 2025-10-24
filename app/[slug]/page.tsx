@@ -12,7 +12,7 @@ export async function generateMetadata({
 
   const { data: page } = await supabase
     .from("pages")
-    .select("title, company_name")
+    .select("title, company_name, hero_title, hero_subtitle")
     .eq("slug", slug)
     .eq("is_published", true)
     .single();
@@ -20,12 +20,31 @@ export async function generateMetadata({
   if (!page) {
     return {
       title: "Page Not Found",
+      description: "The page you're looking for could not be found.",
     };
   }
 
+  const title =
+    page.title ||
+    page.hero_title ||
+    `${page.company_name} + Trig`;
+  const description =
+    page.hero_subtitle ||
+    `Information for ${page.company_name}`;
+
   return {
-    title: page.title || `${page.company_name} - Personalized Experience`,
-    description: `A personalized experience crafted specifically for ${page.company_name}`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

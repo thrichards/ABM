@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageForm } from "../page-form";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Create Page",
+  description: "Create a new ABM landing page",
+};
 
 export default async function NewPagePage() {
   const supabase = await createClient();

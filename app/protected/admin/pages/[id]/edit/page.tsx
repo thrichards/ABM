@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { PageForm } from "../../page-form";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Edit Page",
+  description: "Edit your ABM landing page",
+};
 
 export default async function EditPagePage({
   params,

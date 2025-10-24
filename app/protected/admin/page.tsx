@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PagesList } from "./pages-list";
 import { Button } from "@/components/ui/button";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trig ABM - Dashboard",
+  description: "Manage your ABM landing pages and campaigns",
+};
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
