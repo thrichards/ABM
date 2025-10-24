@@ -24,19 +24,21 @@ export default async function EditPagePage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
+    <div className="container mx-auto px-4 py-6 h-full flex flex-col">
+      <div className="mb-6">
         <h2 className="text-3xl font-bold">Edit Page</h2>
         <p className="text-muted-foreground mt-2">
           Update your custom ABM landing page
         </p>
       </div>
 
-      <PageForm
-        organizationId={page.organization_id}
-        userId={user!.id}
-        page={page}
-      />
+      <div className="flex-1 overflow-hidden">
+        <PageForm
+          organizationId={page.organization_id}
+          userId={user!.id}
+          page={page}
+        />
+      </div>
     </div>
   );
 }

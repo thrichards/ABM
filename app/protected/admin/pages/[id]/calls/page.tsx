@@ -54,6 +54,37 @@ export default async function CallLogsPage({
     return new Date(date).toLocaleString();
   };
 
+  // Calculate macro stats
+  const totalCalls = callLogs?.length || 0;
+  const totalDuration = callLogs?.reduce((sum, log) => sum + (log.call_duration_seconds || 0), 0) || 0;
+  const totalCredits = callLogs?.reduce((sum, log) => sum + (log.elevenlabs_total_credits || log.call_cost_usd || 0), 0) || 0;
+
+  // Count successful calls
+  const successfulCalls = callLogs?.filter(log => {
+    const analysis = log.analysis as { call_successful?: string } | null;
+    return analysis?.call_successful === "success";
+  }).length || 0;
+
+  // Get most recent call date
+  const mostRecentCall = callLogs?.[0]?.created_at
+    ? new Date(callLogs[0].created_at)
+    : null;
+
+  // Calculate time since most recent call
+  const getTimeSinceLastCall = () => {
+    if (!mostRecentCall) return "No calls yet";
+    const now = new Date();
+    const diffMs = now.getTime() - mostRecentCall.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHours > 0) return `${diffHours}h ago`;
+    if (diffMins > 0) return `${diffMins}m ago`;
+    return "Just now";
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
@@ -69,6 +100,50 @@ export default async function CallLogsPage({
           {page.title || page.company_name} - {page.slug}
         </p>
       </div>
+
+      {/* Macro Stats */}
+      {callLogs && callLogs.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="border rounded-lg p-4 bg-card">
+            <div className="text-2xl font-bold">{totalCalls}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              Total Calls
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 bg-card">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {successfulCalls}
+            </div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              Successful
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {totalCalls > 0 ? `${Math.round((successfulCalls / totalCalls) * 100)}%` : '0%'}
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 bg-card">
+            <div className="text-2xl font-bold">{formatDuration(totalDuration)}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              Total Duration
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {totalCalls > 0 ? `${Math.round(totalDuration / totalCalls)}s avg` : '0s avg'}
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 bg-card">
+            <div className="text-2xl font-bold font-mono">{totalCredits.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              Total Credits
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Last call: {getTimeSinceLastCall()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {!callLogs || callLogs.length === 0 ? (
         <div className="text-center py-12 border rounded-lg bg-card">
