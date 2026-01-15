@@ -1,0 +1,1002 @@
+openapi: 3.0.3
+info:
+  title: ABM Pages API
+  description: |
+    API for creating and managing Account-Based Marketing (ABM) landing pages.
+
+    ## Authentication
+    All endpoints require Bearer token authentication using an API key that starts with `trig_`.
+    API keys are scoped to an organization - all operations will only affect pages within that organization.
+
+    ## Features
+    - **Auto-generated content**: If `body_markdown` is not provided when creating a page, AI will automatically generate content based on the company name and meeting transcript.
+    - **Transcript condensing**: Meeting transcripts larger than 65KB are automatically condensed using AI.
+    - **Email gating**: Pages can require visitors to enter their email before viewing content, with optional domain or allowlist restrictions.
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: https://your-domain.com/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Pages
+    description: ABM landing page management
+  - name: Calls
+    description: Voice agent call logs and analytics
+  - name: Leads
+    description: Email capture and lead management
+
+paths:
+  /pages:
+    get:
+      tags:
+        - Pages
+      summary: List all pages
+      description: Retrieve all pages for the authenticated organization, ordered by creation date (newest first).
+      operationId: listPages
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Page'
+              example:
+                pages:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    organization_id: "550e8400-e29b-41d4-a716-446655440001"
+                    slug: "acme-corp"
+                    company_name: "Acme Corp"
+                    title: "Welcome to Acme"
+                    hero_title: "Your Personalized Experience"
+                    hero_subtitle: "Built just for you"
+                    body_markdown: "# Welcome\n\nThis is your custom page..."
+                    meeting_transcript: "Meeting transcript content..."
+                    is_published: true
+                    email_gate_enabled: false
+                    email_gate_type: null
+                    email_gate_domain: null
+                    email_gate_allowlist: null
+                    created_at: "2024-01-15T10:30:00Z"
+                    updated_at: "2024-01-15T10:30:00Z"
+                    created_by: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Pages
+      summary: Create a page
+      description: |
+        Create a new ABM landing page.
+
+        **Auto-generation features:**
+        - If `body_markdown` is not provided, content will be auto-generated using AI based on the company name and meeting transcript.
+        - If `meeting_transcript` exceeds 65KB, it will be automatically condensed using AI.
+      operationId: createPage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageCreate'
+            examples:
+              minimal:
+                summary: Minimal request (AI generates content)
+                value:
+                  slug: "acme-corp"
+                  company_name: "Acme Corp"
+              full:
+                summary: Full request with all fields
+                value:
+                  slug: "acme-corp"
+                  company_name: "Acme Corp"
+                  title: "Welcome Acme Corp"
+                  hero_title: "Your Personalized Landing Page"
+                  hero_subtitle: "We built this just for you"
+                  body_markdown: "# Welcome\n\nThank you for your interest..."
+                  meeting_transcript: "Full transcript from our meeting..."
+                  is_published: true
+                  email_gate_enabled: true
+                  email_gate_type: "domain"
+                  email_gate_domain: "acme.com"
+              withAllowlist:
+                summary: With email allowlist
+                value:
+                  slug: "beta-inc"
+                  company_name: "Beta Inc"
+                  is_published: false
+                  email_gate_enabled: true
+                  email_gate_type: "allowlist"
+                  email_gate_allowlist:
+                    - "john@beta.com"
+                    - "jane@beta.com"
+      responses:
+        '200':
+          description: Page created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCreateResponse'
+              example:
+                success: true
+                page:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  slug: "acme-corp"
+                  company_name: "Acme Corp"
+                  is_published: true
+                url: "https://your-domain.com/acme-corp"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    error: "slug and company_name are required"
+                duplicateSlug:
+                  summary: Duplicate slug
+                  value:
+                    error: "A page with this slug already exists"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /pages/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PageId'
+
+    get:
+      tags:
+        - Pages
+      summary: Get a page
+      description: Retrieve a single page by ID. Only pages belonging to your organization can be accessed.
+      operationId: getPage
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    $ref: '#/components/schemas/Page'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Pages
+      summary: Update a page
+      description: |
+        Update an existing page. All fields are optional - only provided fields will be updated.
+        Only pages belonging to your organization can be updated.
+      operationId: updatePage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageUpdate'
+            examples:
+              publish:
+                summary: Publish a page
+                value:
+                  is_published: true
+              updateContent:
+                summary: Update content
+                value:
+                  title: "New Title"
+                  body_markdown: "# Updated Content\n\nNew page content here..."
+              changeSlug:
+                summary: Change slug
+                value:
+                  slug: "new-slug"
+              enableEmailGate:
+                summary: Enable email gating
+                value:
+                  email_gate_enabled: true
+                  email_gate_type: "domain"
+                  email_gate_domain: "company.com"
+      responses:
+        '200':
+          description: Page updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageUpdateResponse'
+              example:
+                success: true
+                page:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  slug: "acme-corp"
+                  company_name: "Acme Corp"
+                  is_published: true
+                url: "https://your-domain.com/acme-corp"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "A page with this slug already exists"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Pages
+      summary: Delete a page
+      description: |
+        Permanently delete a page. This action cannot be undone.
+        Only pages belonging to your organization can be deleted.
+      operationId: deletePage
+      responses:
+        '200':
+          description: Page deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /pages/{id}/calls:
+    parameters:
+      - $ref: '#/components/parameters/PageId'
+
+    get:
+      tags:
+        - Calls
+      summary: List call logs for a page
+      description: |
+        Retrieve all voice agent call logs for a specific page.
+        Includes call transcripts, analysis, duration, and cost metrics.
+      operationId: listPageCalls
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of calls to return (max 100)
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of calls to skip for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: from
+          in: query
+          description: Filter calls created after this ISO 8601 timestamp
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Filter calls created before this ISO 8601 timestamp
+          schema:
+            type: string
+            format: date-time
+        - name: successful
+          in: query
+          description: Filter by call success status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallsResponse'
+              example:
+                calls:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    page_id: "550e8400-e29b-41d4-a716-446655440001"
+                    conversation_id: "conv_abc123"
+                    agent_id: "agent_xyz"
+                    call_duration_seconds: 180
+                    elevenlabs_total_credits: 1500
+                    started_at: "2024-01-15T10:30:00Z"
+                    ended_at: "2024-01-15T10:33:00Z"
+                    user_email: "john@acme.com"
+                    company_name: "Acme Corp"
+                    transcript:
+                      - role: "agent"
+                        message: "Hello, how can I help you today?"
+                      - role: "user"
+                        message: "I'd like to learn more about your product."
+                    analysis:
+                      call_successful: "success"
+                      call_summary_title: "Product Demo Request"
+                      transcript_summary: "User requested a product demo..."
+                    created_at: "2024-01-15T10:33:00Z"
+                pagination:
+                  total: 25
+                  limit: 50
+                  offset: 0
+                  has_more: false
+                summary:
+                  total_calls: 25
+                  successful_calls: 20
+                  success_rate: 80
+                  total_duration_seconds: 4500
+                  average_duration_seconds: 180
+                  total_credits: 37500
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /pages/{id}/leads:
+    parameters:
+      - $ref: '#/components/parameters/PageId'
+
+    get:
+      tags:
+        - Leads
+      summary: List leads for a page
+      description: |
+        Retrieve all captured email leads for a specific page.
+        Includes contact information and capture metadata.
+      operationId: listPageLeads
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of leads to return (max 100)
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of leads to skip for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: from
+          in: query
+          description: Filter leads captured after this ISO 8601 timestamp
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Filter leads captured before this ISO 8601 timestamp
+          schema:
+            type: string
+            format: date-time
+        - name: email
+          in: query
+          description: Filter by email address (partial match)
+          schema:
+            type: string
+        - name: domain
+          in: query
+          description: Filter by email domain (e.g., "acme.com")
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadsResponse'
+              example:
+                leads:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    page_id: "550e8400-e29b-41d4-a716-446655440001"
+                    email: "john@acme.com"
+                    first_name: "John"
+                    last_name: "Doe"
+                    company: "Acme Corp"
+                    captured_at: "2024-01-15T10:30:00Z"
+                    ip_address: "192.168.1.1"
+                    user_agent: "Mozilla/5.0..."
+                pagination:
+                  total: 150
+                  limit: 50
+                  offset: 0
+                  has_more: true
+                summary:
+                  total_leads: 150
+                  top_domains:
+                    - domain: "acme.com"
+                      count: 45
+                    - domain: "beta.com"
+                      count: 30
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API key authentication. Keys must start with `trig_` prefix.
+
+        Example: `Authorization: Bearer trig_your_api_key_here`
+
+  parameters:
+    PageId:
+      name: id
+      in: path
+      required: true
+      description: The unique identifier of the page (UUID)
+      schema:
+        type: string
+        format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+  schemas:
+    Page:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        organization_id:
+          type: string
+          format: uuid
+          description: Organization that owns this page
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        slug:
+          type: string
+          description: URL slug (unique within organization)
+          example: "acme-corp"
+        company_name:
+          type: string
+          description: Target company name
+          example: "Acme Corp"
+        title:
+          type: string
+          nullable: true
+          description: Page title
+          example: "Welcome to Acme"
+        hero_title:
+          type: string
+          nullable: true
+          description: Hero section title
+          example: "Your Personalized Experience"
+        hero_subtitle:
+          type: string
+          nullable: true
+          description: Hero section subtitle
+          example: "Built just for you"
+        body_markdown:
+          type: string
+          nullable: true
+          description: Page content in Markdown format
+          example: "# Welcome\n\nThis is your custom page..."
+        meeting_transcript:
+          type: string
+          nullable: true
+          description: Meeting transcript (may be AI-condensed if originally >65KB)
+          example: "Meeting transcript content..."
+        is_published:
+          type: boolean
+          description: Whether the page is publicly accessible
+          example: true
+        email_gate_enabled:
+          type: boolean
+          description: Whether email capture is required to view the page
+          example: false
+        email_gate_type:
+          type: string
+          nullable: true
+          enum: [any, domain, allowlist]
+          description: |
+            Type of email restriction:
+            - `any`: Any email address accepted
+            - `domain`: Only emails from specified domain
+            - `allowlist`: Only specific email addresses
+          example: "domain"
+        email_gate_domain:
+          type: string
+          nullable: true
+          description: Required email domain (when email_gate_type is "domain")
+          example: "acme.com"
+        email_gate_allowlist:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: email
+          description: List of allowed email addresses (when email_gate_type is "allowlist")
+          example: ["john@acme.com", "jane@acme.com"]
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-15T10:30:00Z"
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: User ID who created the page (null for API-created pages)
+          example: null
+
+    PageCreate:
+      type: object
+      required:
+        - slug
+        - company_name
+      properties:
+        slug:
+          type: string
+          description: URL slug (must be unique)
+          example: "acme-corp"
+          pattern: "^[a-z0-9-]+$"
+        company_name:
+          type: string
+          description: Target company name
+          example: "Acme Corp"
+        title:
+          type: string
+          description: Page title
+          example: "Welcome to Acme"
+        hero_title:
+          type: string
+          description: Hero section title
+          example: "Your Personalized Experience"
+        hero_subtitle:
+          type: string
+          description: Hero section subtitle
+          example: "Built just for you"
+        body_markdown:
+          type: string
+          description: Page content in Markdown. If omitted, AI will auto-generate content.
+          example: "# Welcome\n\nThis is your custom page..."
+        meeting_transcript:
+          type: string
+          description: Meeting transcript. Auto-condensed if >65KB.
+          example: "Full meeting transcript here..."
+        is_published:
+          type: boolean
+          default: false
+          description: Whether to publish immediately
+          example: true
+        email_gate_enabled:
+          type: boolean
+          default: false
+          description: Enable email capture requirement
+          example: false
+        email_gate_type:
+          type: string
+          enum: [any, domain, allowlist]
+          default: "any"
+          description: Type of email restriction
+          example: "domain"
+        email_gate_domain:
+          type: string
+          description: Required domain (when type is "domain")
+          example: "acme.com"
+        email_gate_allowlist:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Allowed emails (when type is "allowlist")
+          example: ["john@acme.com", "jane@acme.com"]
+
+    PageUpdate:
+      type: object
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        slug:
+          type: string
+          description: URL slug (must be unique)
+          example: "new-slug"
+        company_name:
+          type: string
+          description: Target company name
+          example: "Updated Company Name"
+        title:
+          type: string
+          nullable: true
+          description: Page title
+          example: "New Title"
+        hero_title:
+          type: string
+          nullable: true
+          description: Hero section title
+          example: "Updated Hero"
+        hero_subtitle:
+          type: string
+          nullable: true
+          description: Hero section subtitle
+          example: "Updated subtitle"
+        body_markdown:
+          type: string
+          nullable: true
+          description: Page content in Markdown
+          example: "# Updated Content"
+        meeting_transcript:
+          type: string
+          nullable: true
+          description: Meeting transcript
+          example: "Updated transcript..."
+        is_published:
+          type: boolean
+          description: Whether the page is publicly accessible
+          example: true
+        email_gate_enabled:
+          type: boolean
+          description: Enable email capture requirement
+          example: true
+        email_gate_type:
+          type: string
+          enum: [any, domain, allowlist]
+          description: Type of email restriction
+          example: "domain"
+        email_gate_domain:
+          type: string
+          nullable: true
+          description: Required domain (when type is "domain")
+          example: "company.com"
+        email_gate_allowlist:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: email
+          description: Allowed emails (when type is "allowlist")
+          example: ["user@company.com"]
+
+    PageCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        page:
+          $ref: '#/components/schemas/Page'
+        url:
+          type: string
+          format: uri
+          description: Public URL of the created page
+          example: "https://your-domain.com/acme-corp"
+
+    PageUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        page:
+          $ref: '#/components/schemas/Page'
+        url:
+          type: string
+          format: uri
+          description: Public URL of the updated page
+          example: "https://your-domain.com/acme-corp"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "An error occurred"
+
+    Call:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        page_id:
+          type: string
+          format: uuid
+          description: Associated page ID
+        conversation_id:
+          type: string
+          description: ElevenLabs conversation ID
+        agent_id:
+          type: string
+          nullable: true
+          description: ElevenLabs agent ID
+        call_duration_seconds:
+          type: integer
+          nullable: true
+          description: Duration of the call in seconds
+        call_cost_usd:
+          type: number
+          format: float
+          nullable: true
+          description: Cost in USD (legacy field)
+        elevenlabs_call_credits:
+          type: integer
+          nullable: true
+          description: ElevenLabs call credits used
+        elevenlabs_llm_credits:
+          type: integer
+          nullable: true
+          description: ElevenLabs LLM credits used
+        elevenlabs_total_credits:
+          type: integer
+          nullable: true
+          description: Total ElevenLabs credits used
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Call start time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Call end time
+        user_email:
+          type: string
+          format: email
+          nullable: true
+          description: Caller's email address
+        company_name:
+          type: string
+          nullable: true
+          description: Caller's company name
+        transcript:
+          type: array
+          nullable: true
+          description: Full conversation transcript
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, agent]
+              message:
+                type: string
+        analysis:
+          type: object
+          nullable: true
+          description: AI analysis of the call
+          properties:
+            call_successful:
+              type: string
+              enum: [success, failure]
+              description: Whether the call achieved its goal
+            call_summary_title:
+              type: string
+              description: Short title summarizing the call
+            transcript_summary:
+              type: string
+              description: Summary of the conversation
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Record update timestamp
+
+    CallsResponse:
+      type: object
+      properties:
+        calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/Call'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        summary:
+          type: object
+          properties:
+            total_calls:
+              type: integer
+              description: Total number of calls
+            successful_calls:
+              type: integer
+              description: Number of successful calls
+            success_rate:
+              type: integer
+              description: Success rate percentage (0-100)
+            total_duration_seconds:
+              type: integer
+              description: Sum of all call durations
+            average_duration_seconds:
+              type: integer
+              description: Average call duration
+            total_credits:
+              type: number
+              description: Total credits consumed
+
+    Lead:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        page_id:
+          type: string
+          format: uuid
+          description: Associated page ID
+        email:
+          type: string
+          format: email
+          description: Lead's email address
+        first_name:
+          type: string
+          nullable: true
+          description: Lead's first name
+        last_name:
+          type: string
+          nullable: true
+          description: Lead's last name
+        company:
+          type: string
+          nullable: true
+          description: Lead's company name
+        captured_at:
+          type: string
+          format: date-time
+          description: When the lead was captured
+        ip_address:
+          type: string
+          nullable: true
+          description: IP address at capture time
+        user_agent:
+          type: string
+          nullable: true
+          description: Browser user agent at capture time
+
+    LeadsResponse:
+      type: object
+      properties:
+        leads:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lead'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        summary:
+          type: object
+          properties:
+            total_leads:
+              type: integer
+              description: Total number of leads
+            top_domains:
+              type: array
+              description: Most common email domains
+              items:
+                type: object
+                properties:
+                  domain:
+                    type: string
+                  count:
+                    type: integer
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of records
+        limit:
+          type: integer
+          description: Maximum records per page
+        offset:
+          type: integer
+          description: Current offset
+        has_more:
+          type: boolean
+          description: Whether more records exist
+
+  responses:
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missingHeader:
+              summary: Missing authorization header
+              value:
+                error: "Missing or invalid Authorization header"
+            invalidFormat:
+              summary: Invalid API key format
+              value:
+                error: "Invalid API key format"
+            invalidKey:
+              summary: Invalid or expired key
+              value:
+                error: "Invalid or expired API key"
+            expiredKey:
+              summary: Expired API key
+              value:
+                error: "API key has expired"
+
+    Forbidden:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "You don't have access to this page"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Page not found"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal server error"
